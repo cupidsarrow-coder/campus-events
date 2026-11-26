@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Campus Events</title>
+<style>
+  /* COLORS: defined once as variables, then reused below */
+  :root {
+    --bg: #fbf3f9; --card: #ffffff; --text: #22153a; --muted: #62577a;
+    --accent: #4b2e83; --accent-text: #ffffff; --border: #e2d9f0; --live: #15803d;
+    --error: #b42318;
+    --gold: #e8c766; --gold-dk: #8a6a12; --blossom: #f7b6cf; --blossom-dk: #e07aa3;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #2b1f45; --card: #3a2c5a; --text: #f6f1ff; --muted: #c8bde0;
+      --accent: #b9a2ff; --accent-text: #14111f; --border: #55467a; --live: #4ade80;
+      --error: #ff8a80; --gold: #e8c766; --gold-dk: #e8c766;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #2b1f45; --card: #3a2c5a; --text: #f6f1ff; --muted: #c8bde0;
+    --accent: #b9a2ff; --accent-text: #14111f; --border: #55467a; --live: #4ade80;
+    --error: #ff8a80; --gold: #e8c766; --gold-dk: #e8c766; color-scheme: dark;
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.45; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  /* HEADER: purple band with cherry blossoms and a rain cloud */
+  .hero { position: relative; overflow: hidden; background: #4b2e83; color: #fff;
+          padding: 34px 16px 30px; border-bottom: 4px solid var(--gold); }
+  .hero-in { position: relative; z-index: 2; max-width: 640px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: clamp(1.7rem, 6vw, 2.2rem); line-height: 1.05; }
+  .sub { margin: 0; color: var(--gold); font-weight: 600; }
+  .branch { position: absolute; z-index: 1; top: -6px; right: -10px; width: min(330px, 62vw); height: auto; }
+  .weather { position: absolute; z-index: 1; left: calc(50% - 450px); bottom: 4px; width: 104px; display: flex; flex-direction: column; align-items: center; }
+  .weather svg { width: 92px; height: 70px; overflow: visible; }
+  #wxText { font-size: .72rem; font-weight: 600; color: #e9e2f7; text-align: center; line-height: 1.2; }
+  main { padding-top: 18px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: .75rem; padding: 2px 9px; font-weight: 600;
+           border-radius: 999px; background: color-mix(in srgb, #7fb2f0 22%, var(--card)); color: light-dark(#24508f, #a9cdfb); }
+  .badge svg { width: 13px; height: 13px; }
+  .check { display: flex; align-items: center; gap: 10px; font-size: .95rem; margin: 2px 0 14px; cursor: pointer; }
+  .check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+  /* EXTRA CUTE MODE: everything below only shows when <body class="cute"> */
+  .petals, .cat-icon, .drop-anim { display: none; }
+  .cute .petals { display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .cute .petals i { position: absolute; top: -12px; width: 10px; height: 8px; background: var(--blossom);
+                    border-radius: 60% 0 60% 0; animation: fall 9s linear infinite; opacity: .9; }
+  .cute .petals i:nth-child(1){left:8%;animation-delay:0s}.cute .petals i:nth-child(2){left:22%;animation-delay:2.5s}
+  .cute .petals i:nth-child(3){left:38%;animation-delay:5s}.cute .petals i:nth-child(4){left:55%;animation-delay:1.2s}
+  .cute .petals i:nth-child(5){left:70%;animation-delay:3.8s}.cute .petals i:nth-child(6){left:86%;animation-delay:6.4s}
+  @keyframes fall { 0% { translate: 0 0; rotate: 0deg } 50% { translate: 18px 70px; rotate: 160deg } 100% { translate: -6px 150px; rotate: 320deg; opacity: 0 } }
+  .cute .drop-anim { display: inline; animation: rain 1.1s linear infinite; }
+  .cute .sun-rays { transform-origin: 46px 35px; animation: spin 14s linear infinite; }
+  .cute .twinkle { animation: tw 2s ease-in-out infinite; } .cute .twinkle:nth-of-type(2) { animation-delay: .7s }
+  .cute .flake { animation: rain 2.2s linear infinite; } .cute .flake:nth-of-type(2) { animation-delay: .8s } .cute .flake:nth-of-type(3) { animation-delay: 1.5s }
+  .cute .bolt { animation: tw 1.6s steps(2) infinite; }
+  @keyframes spin { to { rotate: 360deg; } }
+  @keyframes tw { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .cute .drop-anim:nth-of-type(2) { animation-delay: .35s } .cute .drop-anim:nth-of-type(3) { animation-delay: .7s }
+  @keyframes rain { from { translate: 0 -4px; opacity: 1 } to { translate: 0 10px; opacity: 0 } }
+  .cute .cat-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px;
+                    background: color-mix(in srgb, var(--blossom) 35%, var(--card)); color: var(--accent); }
+  .cute .cat-icon svg { width: 20px; height: 20px; }
+  .cute .event { position: relative; display: flex; gap: 12px; padding-right: 32px; transition: translate .15s; }
+  .cute .event:hover { translate: 0 -2px; }
+  .cute .event::after { content: ""; position: absolute; top: 14px; right: 12px; width: 12px; height: 12px; border-radius: 50%;
+                        background: radial-gradient(circle, var(--gold) 0 30%, var(--blossom) 32%); opacity: .8; }
+  .ev-body { flex: 1; }
+  @media (prefers-reduced-motion: reduce) { .cute .petals i, .cute .drop-anim, .cute .sun-rays, .cute .twinkle, .cute .flake, .cute .bolt { animation: none; } .cute .petals { display: none; } }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  textarea { resize: vertical; }
+  .opt { font-weight: 400; color: var(--muted); }
+  input, select, textarea { width: 100%; padding: 12px 14px; font-size: 1rem; color: var(--text); font-family: inherit;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+  .filters + .filters { margin-top: 0; }
+  .filters .label { align-self: center; font-size: .85rem; color: var(--muted); margin-right: 2px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+  button { font-family: inherit; }
+  button.chip { min-height: 40px; padding: 8px 14px; font-size: .9rem; color: var(--text); background: var(--card);
+    border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+  button.chip.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .count { margin: 12px 0; color: var(--muted); font-size: .9rem; }
+
+  .event { background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+           padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 14%, transparent); }
+  .event h2 { margin: 0 0 2px; font-size: 1.05rem; }
+  .club { color: var(--accent); font-size: .9rem; font-weight: 600; }
+  .meta { color: var(--muted); font-size: .88rem; margin: 6px 0; }
+  .tag { display: inline-block; font-size: .75rem; padding: 2px 9px; border: 0;
+         border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); font-weight: 600; }
+  .live { display: inline-block; vertical-align: 2px; margin-left: 8px; padding: 2px 8px; border-radius: 999px;
+          background: var(--gold); color: #3a2a00; font-weight: 700; font-size: .72rem; white-space: nowrap; }
+  .mine { color: var(--accent); }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .desc { margin: 4px 0 8px; font-size: .92rem; }
+  .cal { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; min-height: 36px; padding: 6px 12px; font-size: .85rem;
+         font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--border); border-radius: 999px; }
+  .cal:hover { background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+  .cal svg { width: 15px; height: 15px; }
+  .cal + .tag { margin-left: 0; }
+  .remove { margin-left: 0; min-height: 36px; padding: 6px 12px; font-size: .85rem; cursor: pointer;
+            color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 999px; }
+  .remove:hover { color: var(--error); border-color: var(--error); }
+  .notice { margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; font-size: .85rem;
+            background: color-mix(in srgb, var(--gold) 25%, var(--card)); }
+  .notice[hidden] { display: none; }
+  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
+
+  /* ADD-EVENT FORM */
+  .add-toggle { width: 100%; min-height: 48px; margin: 4px 0 16px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    color: var(--accent-text); background: var(--accent); border: 0; border-radius: 12px; }
+  form { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
+  form[hidden] { display: none; }
+  form h2 { margin: 0 0 4px; font-size: 1.1rem; }
+  form .hint { margin: 0 0 14px; color: var(--muted); font-size: .88rem; }
+  .field { margin-bottom: 12px; }
+  .field[hidden] { display: none; }
+  .field label { display: block; font-size: .88rem; font-weight: 600; margin-bottom: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .form-error { color: var(--error); font-size: .9rem; margin: 0 0 10px; min-height: 1.2em; }
+  .actions { display: flex; gap: 10px; }
+  .actions button { min-height: 44px; padding: 0 18px; font-size: 1rem; border-radius: 12px; cursor: pointer; }
+  .save { color: var(--accent-text); background: var(--accent); border: 0; font-weight: 600; }
+  .cancel { color: var(--text); background: transparent; border: 1px solid var(--border); }
+  .toast { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; background: var(--text); color: var(--bg);
+           padding: 10px 16px; border-radius: 999px; font-size: .9rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 480px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 999px) { .weather { left: 8px; top: 8px; bottom: auto; width: 116px; } .weather svg { width: 64px; height: 49px; } .hero { padding-top: 104px; } }
+  @media (max-width: 640px) { .hero { padding-top: 104px; } .branch { width: 70vw; } }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body class="cute">
+<header class="hero">
+  <!-- Cherry blossom branch (like the Quad in spring) -->
+  <svg class="branch" viewBox="0 0 330 150" aria-hidden="true">
+    <defs>
+      <g id="flower"><g fill="#f7b6cf" stroke="#e07aa3" stroke-width=".6">
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5"/><ellipse cx="0" cy="-5" rx="3.4" ry="5" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" transform="rotate(144)"/><ellipse cx="0" cy="-5" rx="3.4" ry="5" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-5" rx="3.4" ry="5" transform="rotate(288)"/></g><circle r="2.2" fill="#e8c766"/></g>
+    </defs>
+    <path d="M335 8 C 270 20, 220 34, 150 70 S 60 104, 20 128" fill="none" stroke="#3a2340" stroke-width="5" stroke-linecap="round"/>
+    <path d="M232 36 C 228 56, 214 70, 198 80 M150 70 C 160 92, 156 110, 140 124 M90 100 C 84 84, 70 76, 54 76" fill="none" stroke="#3a2340" stroke-width="3" stroke-linecap="round"/>
+    <use href="#flower" transform="translate(300 16) scale(1.5)"/><use href="#flower" transform="translate(262 26) scale(1.2)"/>
+    <use href="#flower" transform="translate(232 36) scale(1.6)"/><use href="#flower" transform="translate(198 80) scale(1.3)"/>
+    <use href="#flower" transform="translate(186 54) scale(1.1)"/><use href="#flower" transform="translate(150 70) scale(1.7)"/>
+    <use href="#flower" transform="translate(140 124) scale(1.3)"/><use href="#flower" transform="translate(116 86) scale(1.1)"/>
+    <use href="#flower" transform="translate(90 100) scale(1.5)"/><use href="#flower" transform="translate(54 76) scale(1.2)"/>
+    <use href="#flower" transform="translate(30 122) scale(1.3)"/>
+  </svg>
+  <!-- LIVE WEATHER: the icon is drawn by the script (STEP 9) -->
+  <div class="weather" id="weather" aria-live="polite">
+    <svg id="wxIcon" viewBox="0 0 92 70" aria-hidden="true"></svg>
+    <span id="wxText"></span>
+  </div>
+  <div class="petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="hero-in">
+    <h1>Campus Events</h1>
+    <p class="sub">Find what's happening on campus, rain or shine.</p>
+  </div>
+</header>
+<main>
+
+  <button class="add-toggle" id="addToggle" type="button" aria-expanded="false" aria-controls="addForm">＋ Add an event</button>
+
+  <!-- THE ADD-EVENT FORM (hidden until the button above is clicked) -->
+  <form id="addForm" hidden novalidate>
+    <h2>Add an event</h2>
+    <p class="hint">Events you add are shared with everyone who uses the app.</p>
+    <div class="field"><label for="f-title">Event name</label><input id="f-title" required maxlength="80" placeholder="e.g. Study Night"></div>
+    <div class="field"><label for="f-club">Organization</label><input id="f-club" required maxlength="80" placeholder="e.g. a club, tutoring center or department"></div>
+    <div class="field"><label for="f-desc">Description <span class="opt">(optional)</span></label><textarea id="f-desc" rows="3" maxlength="300" placeholder="What should people know? e.g. free food, bring a laptop"></textarea></div>
+    <div class="field"><label for="f-location">Location</label><input id="f-location" required maxlength="80" placeholder="e.g. Mary Gates Hall 241"></div>
+    <div class="field"><label for="f-category">Category</label>
+      <select id="f-category">
+        <option>Social</option><option>Academic</option><option>Career</option><option>Tech</option><option>Arts</option>
+        <option>Sports</option><option>Community</option><option>Cultural</option><option>Food</option>
+        <option value="__other">Other…</option>
+      </select>
+    </div>
+    <div class="field" id="otherField" hidden><label for="f-other">Other category</label><input id="f-other" maxlength="30" placeholder="e.g. Volunteering"></div>
+    <label class="check"><input type="checkbox" id="f-indoor" checked> It's indoors (rain-friendly)</label>
+    <div class="grid">
+      <div class="field"><label for="f-date">Date</label><input id="f-date" type="date" required></div>
+      <div class="field"><label for="f-start">Starts</label><input id="f-start" type="time" required></div>
+      <div class="field"><label for="f-end">Ends</label><input id="f-end" type="time" required></div>
+    </div>
+    <p class="form-error" id="formError" role="alert"></p>
+    <div class="actions">
+      <button class="save" type="submit">Save event</button>
+      <button class="cancel" type="button" id="cancelBtn">Cancel</button>
+    </div>
+  </form>
+
+  <label for="search" style="position:absolute;left:-9999px">Search events</label>
+  <input type="search" id="search" placeholder="Search events, organizations, places…">
+
+  <div class="filters" id="when" aria-label="When"></div>
+  <div class="filters" id="filters" aria-label="Category"></div>
+
+  <p class="notice" id="notice" hidden>Showing sample events: couldn't connect to the database.</p>
+  <div class="count" id="count" aria-live="polite"></div>
+  <div id="list"></div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<!-- Supabase's helper library: makes talking to the database easy -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+{
+  // STEP 0: CONNECTING TO THE DATABASE
+  // The URL and publishable key are meant to be public. The security rules (RLS)
+  // we wrote in Supabase decide what anyone can do: read events and add new ones.
+  const SUPABASE_URL = "https://ozjqjtdcvjsdziiiyats.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_Jc5w0KNt3whl72FF8Jyfyg_jiDhaD0h";
+  let db = null;
+  try { db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (err) { db = null; }
+
+  // STEP 1: SAMPLE DATA (only shown if the database can't be reached, like in a preview)
+  // Each event is an object (like one row of a data frame in R).
+  // "club" holds the organization hosting it: a club, tutoring center, department, etc.
+  // "startsIn" is hours from now, so the demo always has events "happening now".
+  const HOUR = 60 * 60 * 1000;
+  const sample = [
+    { title: "Open Mic Night", description: "Poetry, music or comedy: sign up at the door for a 5-minute slot, or just come listen.", indoor: true, club: "Poetry Collective", category: "Arts", location: "HUB Lounge", startsIn: -0.5, hours: 2 },
+    { title: "Intro to Resume Building", description: "Bring a draft (or nothing!) and learn how to turn class projects into strong resume bullets.", indoor: true, club: "Informatics Student Association", category: "Career", location: "Mary Gates Hall 241", startsIn: 0.5, hours: 1.5 },
+    { title: "Free Boba Social", description: "Meet new people over free boba. First come, first served while supplies last.", indoor: false, club: "Swahili Language Club", category: "Social", location: "Red Square", startsIn: 3, hours: 2 },
+    { title: "Pickup Volleyball", description: "All skill levels welcome. Teams are made on the spot.", indoor: true, club: "Intramural Sports", category: "Sports", location: "IMA Gym", startsIn: -1, hours: 3 },
+    { title: "Pre-Health Panel", description: "Current med, nursing and public health students answer your questions about applying.", indoor: true, club: "HOSA", category: "Career", location: "Kane Hall 130", startsIn: 26, hours: 2 },
+    { title: "Drop-in Math Tutoring", description: "Free help with calculus and stats homework. No appointment needed.", indoor: true, club: "Campus Tutoring Center", category: "Academic", location: "Odegaard Library", startsIn: -0.25, hours: 3 },
+    { title: "Hack Night", description: "Work on any coding project with others. Snacks provided; beginners very welcome.", indoor: true, club: "Code Club", category: "Tech", location: "Allen Library Atrium", startsIn: 5, hours: 3 },
+    { title: "Skincare Swap & Chat", description: "Swap gently used products and share routines. Bring something to trade.", indoor: true, club: "Beauty Club", category: "Social", location: "Odegaard Library", startsIn: 50, hours: 1.5 },
+    { title: "Student Government Town Hall", description: "Hear what student government is working on and share your ideas.", indoor: true, club: "ASUW", category: "Community", location: "HUB Ballroom", startsIn: 28, hours: 1.5 }
+  ].map(e => {
+    const start = Date.now() + e.startsIn * HOUR;      // turn "hours from now" into real times
+    return { ...e, start, end: start + e.hours * HOUR };
+  });
+
+  // STEP 2: LOADING EVENTS FROM THE DATABASE
+  // The database calls the columns start_at / end_at, so we translate each row
+  // into the same shape the rest of the app already uses.
+  let events = [];
+  let usingSamples = false;
+  let loaded = false;               // false until the first load finishes
+  const fromRow = row => ({
+    id: row.id, title: row.title, club: row.club, location: row.location, category: row.category,
+    description: row.description || "", indoor: row.indoor,
+    start: Date.parse(row.start_at), end: Date.parse(row.end_at)
+  });
+  async function loadEvents() {
+    try {
+      if (!db) throw new Error("no database");
+      const { data, error } = await db
+        .from("events")
+        .select("*")
+        .gt("end_at", new Date().toISOString())   // only events that haven't ended
+        .order("start_at");                         // soonest first
+      if (error) throw error;
+      events = data.map(fromRow);
+      usingSamples = false;
+    } catch (err) {
+      events = sample;                              // can't reach the database: show the demo events
+      usingSamples = true;
+    }
+    loaded = true;
+    document.getElementById("notice").hidden = !usingSamples;
+    renderFilters(); render();
+  }
+
+  // STEP 3: THE STATE
+  let selectedCategory = "All";
+  let onlyHappeningNow = false;
+  let timeRange = "any";            // "any", "today" or "week"
+
+  // STEP 4: HELPER FUNCTIONS
+  const allEvents = () => events;
+  function inTimeRange(e) {
+    if (timeRange === "any") return true;
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const days = timeRange === "today" ? 1 : 7;
+    const rangeEnd = startOfToday.getTime() + days * 24 * HOUR;
+    return e.start < rangeEnd;      // starts before the end of today / this week
+  }
+  function isHappeningNow(e) {
+    const now = Date.now();
+    return e.start <= now && now <= e.end;
+  }
+  function formatTime(e) {
+    const day = new Date(e.start).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    const t = ms => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    return day + ", " + t(e.start) + " – " + t(e.end);
+  }
+  // Little icons for each category (only shown in extra-cute mode)
+  const ICONS = {
+    Academic: '<path d="M4 6l8-3 8 3-8 3z"/><path d="M7 8v5c3 2 7 2 10 0V8"/>',
+    Career:   '<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5h6v2"/>',
+    Tech:     '<rect x="4" y="5" width="16" height="11" rx="1"/><path d="M2 19h20"/>',
+    Arts:     '<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2s0-2 1.5-2h2a3 3 0 0 0 3-3c0-6-4-11-8-11z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16" cy="10" r="1"/>',
+    Sports:   '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+    Social:   '<path d="M7 9h10l-1.5 11h-7z"/><path d="M12 9l2-6"/><circle cx="10" cy="17" r=".8"/><circle cx="13" cy="15" r=".8"/>',
+    Community:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c0-3 2-5 5-5s5 2 5 5M11 20c0-3 2-5 5-5s5 2 5 5"/>',
+    Food:     '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 2-2 7 0 8v10"/>',
+    Cultural: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'
+  };
+  const BLOSSOM = '<g transform="translate(12 12)"><circle r="3" /><circle cy="-6" r="3"/><circle cx="5.7" cy="-1.9" r="3"/><circle cx="3.5" cy="4.9" r="3"/><circle cx="-3.5" cy="4.9" r="3"/><circle cx="-5.7" cy="-1.9" r="3"/></g>';
+  const icon = cat => `<span class="cat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[cat] || BLOSSOM}</svg></span>`;
+  const UMBRELLA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 12a10 10 0 0 1 20 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/></svg>';
+
+  // ADD TO CALENDAR: builds a Google Calendar link with the event already filled in.
+  // Google wants times like 20261125T183000Z (UTC), so we reformat the date.
+  const gcalTime = ms => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  function calendarLink(e) {
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: e.title,
+      dates: gcalTime(e.start) + "/" + gcalTime(e.end),
+      details: (e.description ? e.description + "\n\n" : "") + "Hosted by " + e.club,
+      location: e.location
+    });
+    return "https://calendar.google.com/calendar/render?" + params.toString();
+  }
+  const CAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>';
+
+  // SAFETY: anything a person types is turned into plain text before it goes on the page,
+  // so nobody can sneak code into an event name.
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // STEP 5: FILTERING (the "search engine")
+  function getMatches() {
+    const q = document.getElementById("search").value.toLowerCase().trim();
+    return allEvents()
+      .filter(e => e.end > Date.now())                                   // hide events that already ended
+      .filter(e => selectedCategory === "All" || e.category === selectedCategory)
+      .filter(e => !onlyHappeningNow || isHappeningNow(e))
+      .filter(inTimeRange)
+      .filter(e => (e.title + " " + e.club + " " + e.location + " " + e.category).toLowerCase().includes(q))
+      .sort((a, b) => a.start - b.start);                                // soonest first
+  }
+
+  // STEP 6: DRAWING THE PAGE
+  function render() {
+    if (!loaded) { document.getElementById("list").innerHTML = '<div class="empty">Loading events…</div>'; return; }
+    const matches = getMatches();
+    document.getElementById("count").textContent = matches.length + (matches.length === 1 ? " event" : " events");
+    const list = document.getElementById("list");
+    if (matches.length === 0) {
+      list.innerHTML = allEvents().length === 0
+        ? '<div class="empty">No events yet. Be the first to add one!</div>'
+        : '<div class="empty">No events match. Try clearing a filter.</div>';
+      return;
+    }
+    list.innerHTML = matches.map(e => `
+      <article class="event${isHappeningNow(e) ? " now" : ""}">
+        ${icon(e.category)}
+        <div class="ev-body">
+        <h2>${esc(e.title)}${isHappeningNow(e) ? '<span class="live">● happening now</span>' : ""}</h2>
+        <div class="club">${esc(e.club)}</div>
+        <div class="meta">${formatTime(e)} · ${esc(e.location)}</div>
+        ${e.description ? `<p class="desc">${esc(e.description)}</p>` : ""}
+        <div class="row">
+          <span class="tag">${esc(e.category)}</span>
+          ${e.indoor ? `<span class="badge">${UMBRELLA}rain-friendly</span>` : ""}
+          <a class="cal" href="${calendarLink(e)}" target="_blank" rel="noopener">${CAL_ICON}Add to calendar</a>
+        </div>
+        </div>
+      </article>`).join("");
+  }
+  function chip(label, on, onClick) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip" + (on ? " on" : ""); b.textContent = label;
+    b.setAttribute("aria-pressed", on); b.onclick = onClick;
+    return b;
+  }
+  function renderWhen() {
+    const box = document.getElementById("when");
+    box.innerHTML = '<span class="label">When:</span>';
+    [["any", "Any time"], ["today", "Today"], ["week", "This week"]].forEach(([value, label]) =>
+      box.appendChild(chip(label, timeRange === value, () => { timeRange = value; renderWhen(); render(); })));
+    box.appendChild(chip("Happening now", onlyHappeningNow, () => { onlyHappeningNow = !onlyHappeningNow; renderWhen(); render(); }));
+  }
+  function renderFilters() {
+    const cats = ["All", ...new Set(allEvents().map(e => e.category))];   // unique category names
+    const box = document.getElementById("filters");
+    box.innerHTML = '<span class="label">Type:</span>';
+    cats.forEach(c => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (c === selectedCategory ? " on" : "");
+      b.textContent = c;
+      b.setAttribute("aria-pressed", c === selectedCategory);
+      b.onclick = () => { selectedCategory = c; renderFilters(); render(); };
+      box.appendChild(b);
+    });
+  }
+
+  // STEP 7: THE ADD-EVENT FORM
+  const form = document.getElementById("addForm");
+  const toggle = document.getElementById("addToggle");
+  const errorBox = document.getElementById("formError");
+  const $ = id => document.getElementById(id);
+
+  function openForm(open) {
+    form.hidden = !open;
+    toggle.setAttribute("aria-expanded", open);
+    toggle.textContent = open ? "Close form" : "＋ Add an event";
+    if (open) {
+      if (!$("f-date").value) $("f-date").value = new Date().toLocaleDateString("en-CA"); // today, as YYYY-MM-DD
+      $("f-title").focus();
+    } else { form.reset(); errorBox.textContent = ""; $("otherField").hidden = true; }
+  }
+  toggle.addEventListener("click", () => openForm(form.hidden));
+
+  // Show the "Other category" box only when "Other…" is picked
+  $("f-category").addEventListener("change", () => {
+    const other = $("f-category").value === "__other";
+    $("otherField").hidden = !other;
+    if (other) $("f-other").focus();
+  });
+  $("cancelBtn").addEventListener("click", () => openForm(false));
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();                                   // stop the page from reloading
+    const title = $("f-title").value.trim(), club = $("f-club").value.trim(), location = $("f-location").value.trim();
+    const date = $("f-date").value, startT = $("f-start").value, endT = $("f-end").value;
+
+    // Check the form before saving
+    if (!title || !club || !location || !date || !startT || !endT) { errorBox.textContent = "Please fill in every field."; return; }
+
+    // Category: a listed one, or the club's own words if they picked "Other…"
+    let category = $("f-category").value;
+    if (category === "__other") {
+      const typed = $("f-other").value.trim();
+      if (!typed) { errorBox.textContent = "Please type your category in the Other box."; $("f-other").focus(); return; }
+      category = typed.charAt(0).toUpperCase() + typed.slice(1);   // "volunteering" -> "Volunteering"
+    }
+    const start = new Date(date + "T" + startT).getTime();
+    const end = new Date(date + "T" + endT).getTime();
+    if (end <= start) { errorBox.textContent = "The end time has to be after the start time."; return; }
+    if (end <= Date.now()) { errorBox.textContent = "That event has already ended. Pick a future time."; return; }
+
+    // Send the new event to the database
+    if (usingSamples) { errorBox.textContent = "Can't reach the database right now, so events can't be saved. Try again later."; return; }
+    const saveBtn = form.querySelector(".save");
+    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+    const { error } = await db.from("events").insert({
+      title, club, location, category,
+      description: $("f-desc").value.trim() || null,
+      indoor: $("f-indoor").checked,
+      start_at: new Date(start).toISOString(),
+      end_at: new Date(end).toISOString()
+    });
+    saveBtn.disabled = false; saveBtn.textContent = "Save event";
+    if (error) { errorBox.textContent = "Couldn't save the event. Please try again."; return; }
+    openForm(false);
+    await loadEvents();                 // reload so the new event shows up for you
+    showToast("Event added! Everyone can see it now.");
+  });
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  // STEP 9: LIVE WEATHER ICON
+  // Asks the free Open-Meteo service for the weather at UW (no account needed),
+  // then picks an icon from the "weather code" it sends back.
+  const CLOUD = (fill = "#e9e2f7", x = 0, y = 0) =>
+    `<path transform="translate(${x} ${y})" d="M22 40 a14 14 0 0 1 4-27 a18 18 0 0 1 33-3 a14 14 0 0 1 17 21 a10 10 0 0 1-4 19 h-48 a10 10 0 0 1-2-10z" fill="${fill}"/>`;
+  const SUN = (cx = 46, cy = 35, r = 14) =>
+    `<g class="sun-rays" stroke="#e8c766" stroke-width="4" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a =>
+      `<line x1="${cx}" y1="${cy - r - 6}" x2="${cx}" y2="${cy - r - 13}" transform="rotate(${a} ${cx} ${cy})"/>`).join("")}</g><circle cx="${cx}" cy="${cy}" r="${r}" fill="#e8c766"/>`;
+  const MOON = `<path d="M54 12 a24 24 0 1 0 18 34 a19 19 0 0 1-18-34z" fill="#f3e6b0"/>
+    <circle class="twinkle" cx="22" cy="16" r="2.4" fill="#fff"/><circle class="twinkle" cx="80" cy="12" r="1.8" fill="#fff"/><circle cx="16" cy="44" r="1.5" fill="#fff"/>`;
+  const ICONS_WX = {
+    sun:   SUN(),
+    moon:  MOON,
+    partlyDay:   `<g transform="translate(14 -8) scale(.75)">${SUN()}</g>` + CLOUD("#e9e2f7", -6, 10),
+    partlyNight: `<g transform="translate(16 -6) scale(.7)">${MOON}</g>` + CLOUD("#cfc4e6", -6, 10),
+    cloud: CLOUD(),
+    fog:   CLOUD("#d9d1ea") + `<g stroke="#e9e2f7" stroke-width="3" stroke-linecap="round"><line x1="14" y1="60" x2="78" y2="60"/><line x1="24" y1="67" x2="70" y2="67"/></g>`,
+    rain:  CLOUD() + `<g stroke="#b9cff5" stroke-width="3" stroke-linecap="round"><line x1="30" y1="56" x2="27" y2="64"/><line x1="46" y1="56" x2="43" y2="64"/><line x1="62" y1="56" x2="59" y2="64"/>
+             <line class="drop-anim" x1="38" y1="58" x2="35" y2="66"/><line class="drop-anim" x1="54" y1="58" x2="51" y2="66"/><line class="drop-anim" x1="70" y1="54" x2="67" y2="62"/></g>`,
+    snow:  CLOUD() + `<g fill="#fff"><circle class="flake" cx="30" cy="60" r="3"/><circle class="flake" cx="46" cy="62" r="3"/><circle class="flake" cx="62" cy="60" r="3"/></g>`,
+    storm: CLOUD("#b9aed3") + `<path class="bolt" d="M48 46 l-10 14 h8 l-4 12 l14-17 h-8 l5-9z" fill="#e8c766"/>`
+  };
+  // Weather codes come from the WMO standard that Open-Meteo uses
+  function pickIcon(code, isDay) {
+    if (code === 0 || code === 1) return isDay ? ["sun", "Sunny"] : ["moon", "Clear night"];
+    if (code === 2) return isDay ? ["partlyDay", "Partly cloudy"] : ["partlyNight", "Partly cloudy"];
+    if (code === 3) return ["cloud", "Cloudy"];
+    if (code === 45 || code === 48) return ["fog", "Foggy"];
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return ["rain", "Rainy"];
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return ["snow", "Snowy"];
+    if (code >= 95) return ["storm", "Stormy"];
+    return ["cloud", "Cloudy"];
+  }
+  function showWeather(icon, text) {
+    document.getElementById("wxIcon").innerHTML = ICONS_WX[icon];
+    document.getElementById("wxText").textContent = text;
+  }
+  async function updateWeather() {
+    try {
+      const url = "https://api.open-meteo.com/v1/forecast?latitude=47.6553&longitude=-122.3035" +
+                  "&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles";
+      const res = await fetch(url);
+      const data = await res.json();
+      const now = data.current;
+      const [icon, label] = pickIcon(now.weather_code, now.is_day === 1);
+      showWeather(icon, label + " · " + Math.round(now.temperature_2m) + "°F");
+    } catch (err) {
+      // No internet or the weather service is blocked: guess from the clock instead
+      const hour = new Date().getHours();
+      showWeather(hour >= 7 && hour < 18 ? "sun" : "moon", "");
+    }
+  }
+
+  // STEP 8: START
+  document.getElementById("search").addEventListener("input", render);   // re-filter on every keystroke
+  renderWhen();
+  renderFilters();
+  render();
+  loadEvents();                                   // get the real events from the database
+  setInterval(loadEvents, 2 * 60 * 1000);         // check for new events every 2 minutes
+  updateWeather();
+  setInterval(updateWeather, 15 * 60 * 1000);   // check the weather every 15 minutes
+  setInterval(render, 60 * 1000);   // refresh every minute so "happening now" stays accurate
+}
+</script>
+</body>
+</html>
